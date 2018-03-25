@@ -1,5 +1,12 @@
 window.datalayer = [];
 
+const DB_STORE_BOUTIQUES = "boutiqueItems";
+const DB_STORE_PRODUCTS = "productItems";
+
+/*
+DOMObserver class
+ */
+
 function DOMObserver(elemToObserve, options, cb) {
   this.observer = null;
   this.options = options || {};
@@ -25,14 +32,20 @@ DOMObserver.prototype.__start = function () {
     const messages = [];
     entries.forEach((entry)=>{
       if(entry.isIntersecting && entry.intersectionRatio > this.options.threshold) {
+
         let message = {
           id: parseInt(entry.target.id),
-          class: entry.target.classList.toString()
+          class: entry.target.classList.toString(),
+          storeName: entry.target.dataset.type
         };
+
+        console.log(message);
         messages.push(message);
       }
     });
+
     self.cb(messages);
+
   }, self.options);
 };
 
@@ -57,11 +70,13 @@ Manager.prototype.init = function () {
   this.createWorker(()=>{
     // first handle coming messages listener event
     this.worker.onmessage = function (message) {
-      const item = message.data
-      window.datalayer.push(item);
+      const item = message.data;
+      window.datalayer.push(item); // change
     };
     // then init dom observer
     self.initDOMObserver((message)=>{
+      // pass the postmessage event as callback to
+      // domobserver while starting
       self.worker.postMessage(message);
     });
   });
@@ -86,7 +101,7 @@ Manager.prototype.createWorker = function (cb) {
 };
 
 
-const observerManager = new Manager({
+const manager = new Manager({
   workerFile: "worker.js",
   domObserverConfig: {
     elemToObserve: Array.from(document.getElementsByClassName("block")),
@@ -98,4 +113,4 @@ const observerManager = new Manager({
   }
 });
 
-observerManager.init();
+manager.init();

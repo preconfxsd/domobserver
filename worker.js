@@ -1,43 +1,55 @@
-const DB_NAME = "TESTDB";
+const DB_NAME = "TY_OBSERVER_DB";
 const DB_VERSION = 1;
-const DB_STORE_NAME = "viewport-items";
+const DB_STORE_BOUTIQUES = "boutiqueItems";
+const DB_STORE_PRODUCTS = "productItems";
 
 let DB = null;
-const OBSERVED_ITEMS = [];
 
-function openDb(cb){
+function openDb(dbStoreNames){
   if (DB) {
-    //db is already opened
-    cb();
+    //db is opened
+    console.log("db is opened");
   }
   else {
     console.log("opening db ...");
+    const self = this;
     this.dbRequest = indexedDB.open(DB_NAME, DB_VERSION);
     this.dbRequest.onsuccess = function (evt) {
       DB = this.result;
-      console.log("openDb DONE");
-      cb();
+      console.log('db is opened');
+
     };
 
     this.dbRequest.onerror = function (evt) {
-      console.error("openDb:", evt.target.errorCode);
+      console.error("error openDb:", evt.target.errorCode);
     };
 
     this.dbRequest.onupgradeneeded = function (evt) {
-      let store = evt.currentTarget.result.createObjectStore(
-        DB_STORE_NAME,
-        { keyPath: 'id'}
-      );
+      console.log("onupgradeneeded");
+      dbStoreNames.forEach((storeName)=>{
+        let store = evt.currentTarget.result.createObjectStore(
+          storeName,
+          { keyPath: 'id'} // TODO change with another index
+        );
+      });
     };
   }
 }
 
-function getObjectStore(store_name, mode) {
-  return DB.transaction(store_name, mode).objectStore(store_name);
+function createStores(dbStoreNames) {
+  const self = this;
+
+}
+
+function getObjectStore(storeName, m) {
+  const mode = m || "readwrite";
+  console.log("getting", storeName);
+  const store = DB.transaction(storeName, mode).objectStore(storeName);
+  return store || null;
 }
 
 function isItemObserved(item, cb) {
-  const request = getObjectStore(DB_STORE_NAME, "readonly").get(item.id);
+  const request = getObjectStore(item.storeName).get(item.id);
   request.onsuccess = function (event) {
     cb(request.result);
   };
@@ -64,9 +76,8 @@ function getAllItems() {
   }
 }
 
-function addViewportItem(item) {
-  const store = getObjectStore(DB_STORE_NAME, 'readwrite');
-  let request = store.add(item);
+function addViewportItem(storeName, item) {
+  let request = getObjectStore(storeName).add(item);
 
   request.onsuccess = function(event) {
     //console.log("Successfully added item to db");
@@ -77,20 +88,18 @@ function addViewportItem(item) {
   }
 }
 
+openDb([DB_STORE_PRODUCTS, DB_STORE_BOUTIQUES]);
 
 onmessage = function (message) {
-  const items = message.data;
-  openDb(()=>{
+  if(DB){
+    const items = message.data;
     items.forEach((item)=>{
       const isObserved = isItemObserved(item, (isObserved)=> {
         if (!isObserved) {
-          addViewportItem(item);
+          addViewportItem(item.storeName, item);
           postMessage(item);
         }
       });
-
-    });
-    //getAllItems();
-  });
-
+    })
+  }
 };
