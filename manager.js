@@ -1,7 +1,11 @@
 window.datalayer = [];
 
+const DB_NAME = "TY_OBSERVER_DB";
+const DB_VERSION = 1;
 const DB_STORE_BOUTIQUES = "boutiqueItems";
 const DB_STORE_PRODUCTS = "productItems";
+
+const IDB_EXIST = "idb-exist";
 
 /*
 DOMObserver class
@@ -113,4 +117,15 @@ const manager = new Manager({
   }
 });
 
-manager.init();
+if (!sessionStorage.getItem(IDB_EXIST)) {
+  const request = indexedDB.open(DB_NAME);
+
+  request.onsuccess = function(e) {
+    indexedDB.deleteDatabase(DB_NAME);
+    manager.init();
+    sessionStorage.setItem(IDB_EXIST, true);
+  };
+} else {
+  manager.init();
+}
+

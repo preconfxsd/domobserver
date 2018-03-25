@@ -13,7 +13,7 @@ function openDb(dbStoreNames){
   else {
     console.log("opening db ...");
     const self = this;
-    this.dbRequest = indexedDB.open(DB_NAME, DB_VERSION);
+    this.dbRequest = indexedDB.open(DB_NAME);
     this.dbRequest.onsuccess = function (evt) {
       DB = this.result;
       console.log('db is opened');
@@ -26,6 +26,7 @@ function openDb(dbStoreNames){
 
     this.dbRequest.onupgradeneeded = function (evt) {
       console.log("onupgradeneeded");
+
       dbStoreNames.forEach((storeName)=>{
         let store = evt.currentTarget.result.createObjectStore(
           storeName,
